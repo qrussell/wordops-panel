@@ -43,19 +43,11 @@ wget -qO wo wops.cc && sudo bash wo
 ```
 WordPanel is distributed as a custom Debian package.
 
-### 2. Build the Package
+### 2. Download the package
 
 Navigate to the parent directory of your source code:
 
-```bash
-# Structure should be:
-# /wordpanel-1.0
-#   ├── DEBIAN/
-#   └── opt/
-
-dpkg-deb --build wordpanel-1.0
-
-```
+Download the installer [Releases](https://github.com/qrussell/wordpanel/releases)
 
 ### 3. Install the Package
 
