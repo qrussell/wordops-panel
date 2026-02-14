@@ -19,7 +19,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # --- CONFIGURATION ---
-ASSET_DIR = "/var/lib/wordpanel/assets"
+ASSET_DIR = "/var/lib/wordops-panel/assets"
 REPO_PLUGINS = [
     {"name": "Elementor", "slug": "elementor", "type": "plugin"},
     {"name": "Yoast SEO", "slug": "wordpress-seo", "type": "plugin"},
@@ -162,7 +162,7 @@ async def login_page(request: Request):
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     # Verify against DB
-    conn = sqlite3.connect("/var/lib/wo/wordpanel_users.db")
+    conn = sqlite3.connect("/var/lib/wo/wordops-panel_users.db")
     c = conn.cursor()
     c.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
     row = c.fetchone()

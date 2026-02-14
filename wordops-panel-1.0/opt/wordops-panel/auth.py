@@ -12,7 +12,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-DB_PATH = "/var/lib/wo/wordpanel_users.db"
+DB_PATH = "/var/lib/wo/wordops-panel_users.db"
 
 # --- DATABASE SETUP ---
 def init_user_db():

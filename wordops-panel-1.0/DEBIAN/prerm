@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "Stopping WordPanel service..."
-systemctl stop wordpanel.service
-systemctl disable wordpanel.service
+echo "Stopping WordOps Panel service..."
+systemctl stop wordops-panel.service
+systemctl disable wordops-panel.service
 
 # Remove the virtual environment to clean up space
-rm -rf /opt/wordpanel/venv
+rm -rf /opt/wordops-panel/venv
 
 exit 0

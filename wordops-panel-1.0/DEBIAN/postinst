@@ -2,10 +2,10 @@
 set -e
 
 # Define paths
-APP_DIR="/opt/wordpanel"
+APP_DIR="/opt/wordops-panel"
 VENV_DIR="$APP_DIR/venv"
 
-echo "Setting up WordPanel..."
+echo "Setting up WordOps Panel..."
 
 # 1. Create Virtual Environment (Fresh install)
 if [ ! -f "$VENV_DIR/bin/python" ]; then
@@ -26,19 +26,19 @@ chown -R root:root "$APP_DIR"
 chmod -R 750 "$APP_DIR"
 
 # 4. Handle Systemd Service
-echo "Enabling WordPanel service..."
+echo "Enabling WordOps Panel service..."
 systemctl daemon-reload
-systemctl enable wordpanel.service
+systemctl enable wordops-panel.service
 
 # Restart service
-if systemctl is-active --quiet wordpanel.service; then
-    systemctl restart wordpanel.service
+if systemctl is-active --quiet wordops-panel.service; then
+    systemctl restart wordops-panel.service
 else
-    systemctl start wordpanel.service
+    systemctl start wordops-panel.service
 fi
 
 echo "--------------------------------------------------"
-echo "WordPanel is active at: http://$(hostname -I | awk '{print $1}'):8000"
+echo "WordOps Panel is active at: http://$(hostname -I | awk '{print $1}'):8000"
 echo "--------------------------------------------------"
 
 exit 0
