@@ -33,9 +33,17 @@
 
 ## 📥 Installation
 
+### 1. Prerequisites (Required)
+WordPanel is a control panel *for* WordOps. You must have WordOps installed on your server first.
+
+**Install WordOps:**
+```bash
+# Official WordOps One-Step Installer
+wget -qO wo wops.cc && sudo bash wo
+```
 WordPanel is distributed as a custom Debian package.
 
-### 1. Build the Package
+### 2. Build the Package
 
 Navigate to the parent directory of your source code:
 
@@ -49,7 +57,7 @@ dpkg-deb --build wordpanel-1.0
 
 ```
 
-### 2. Install the Package
+### 3. Install the Package
 
 ```bash
 sudo apt install ./wordpanel-1.0.deb
@@ -58,7 +66,7 @@ sudo apt install ./wordpanel-1.0.deb
 
 *During installation, the package will automatically create a secure Python virtual environment in `/opt/wordpanel/venv`, install dependencies, and start the systemd service.*
 
-### 3. Firewall Setup
+### 4. Firewall Setup
 
 Ensure port **8000** is open on your server:
 
