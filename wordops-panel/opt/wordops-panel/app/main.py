@@ -92,6 +92,25 @@ async def auth_exception_handler(request, exc):
         return RedirectResponse(url="/login")
     return HTMLResponse(content=f"Error: {exc.detail}", status_code=exc.status_code)
 
+# --- INTERNAL AUTH CHECK FOR NGINX ---
+@app.get("/auth/check")
+async def nginx_auth_check(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        # No token = Block access
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    try:
+        # Verify token is valid
+        scheme, _, param = token.partition(" ")
+        payload = jwt.decode(param, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("sub") is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        # Token valid = Allow access
+        return Response(status_code=status.HTTP_200_OK)
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+		
 # --- HELPERS (WordOps) ---
 def get_wo_sites():
     try:
@@ -355,3 +374,8 @@ async def dashboard(request: Request, user: str = Depends(get_current_user)):
         "all_assets": get_all_assets(),    # For Deployment Modal
         "assets": get_vault_assets()       # <--- FIXED: Call the function directly
     })
+
+if __name__ == "__main__":
+    import uvicorn
+    # Listen on all interfaces (0.0.0.0) on port 8000
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

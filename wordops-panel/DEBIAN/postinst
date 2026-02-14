@@ -4,41 +4,106 @@ set -e
 # Define paths
 APP_DIR="/opt/wordops-panel"
 VENV_DIR="$APP_DIR/venv"
+ACL_FILE="/etc/nginx/common/acl.conf"
+SITE_FILE="/etc/nginx/sites-available/22222"
 
 echo "Setting up WordOps Panel..."
 
-# 1. Create Virtual Environment (Fresh install)
+# 1. Setup Python Environment
 if [ ! -f "$VENV_DIR/bin/python" ]; then
     echo "Creating Python virtual environment..."
-    # Ensure we use the system python3 to create it
     /usr/bin/python3 -m venv "$VENV_DIR"
 fi
 
-# 2. Install Python Dependencies
-# We use the pip inside the NEW venv
 echo "Installing dependencies..."
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet
 "$VENV_DIR/bin/pip" install fastapi uvicorn jinja2 python-multipart requests "python-jose[cryptography]" "passlib[argon2]" "argon2-cffi" --quiet
-# 3. Set Permissions
-echo "Fixing permissions..."
-# Ensure the service user (root in your case) owns the files
+
+# 2. Fix Permissions
 chown -R root:root "$APP_DIR"
 chmod -R 750 "$APP_DIR"
 
-# 4. Handle Systemd Service
-echo "Enabling WordOps Panel service..."
+# 3. Modify 'acl.conf' (The Gatekeeper)
+# We insert 'auth_request /auth/check;' right after 'satisfy any;'
+if [ -f "$ACL_FILE" ]; then
+    if ! grep -q "auth_request /auth/check;" "$ACL_FILE"; then
+        echo "Updating acl.conf for SSO..."
+        cp "$ACL_FILE" "${ACL_FILE}.bak"
+        
+        # Insert auth_request line after 'satisfy any;'
+        sed -i '/satisfy any;/a \    auth_request /auth/check;' "$ACL_FILE"
+    else
+        echo "acl.conf already configured."
+    fi
+fi
+
+# 4. Modify 'sites-available/22222' (The Router)
+# We need to define WHAT /auth/check actually does
+if [ -f "$SITE_FILE" ]; then
+    if ! grep -q "location = /auth/check" "$SITE_FILE"; then
+        echo "Adding SSO routes to WordOps Backend (22222)..."
+        cp "$SITE_FILE" "${SITE_FILE}.bak"
+
+        # Create a temp file with the route content
+        cat <<EOF > /tmp/wo_sso_routes.txt
+
+    # --- WORDPANEL SSO ROUTES ---
+    # Internal check against Python App
+    location = /auth/check {
+        internal;
+        proxy_pass http://127.0.0.1:8000/auth/check;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-URI \$request_uri;
+        proxy_set_header Cookie \$http_cookie;
+    }
+
+    # If SSO fails (401), we want Nginx to try the next method (Basic Auth)
+    # Because 'satisfy any' is on, we don't need a specific error page redirect here.
+    # Nginx will automatically fall back to the password prompt if auth_request fails.
+    # ----------------------------
+}
+EOF
+        # Remove the closing brace '}' of the server block
+        # We assume the last line is '}'
+        sed -i '$d' "$SITE_FILE"
+
+        # Append our routes and re-add the closing brace
+        cat /tmp/wo_sso_routes.txt >> "$SITE_FILE"
+        rm /tmp/wo_sso_routes.txt
+        
+    else
+        echo "Site 22222 already configured."
+    fi
+fi
+
+# 5. Restart Services
+echo "Restarting Services..."
 systemctl daemon-reload
 systemctl enable wordops-panel.service
 
-# Restart service
 if systemctl is-active --quiet wordops-panel.service; then
     systemctl restart wordops-panel.service
 else
     systemctl start wordops-panel.service
 fi
 
+# 6. Test and Reload Nginx
+if nginx -t; then
+    echo "Reloading Nginx..."
+    systemctl reload nginx
+else
+    echo "❌ Nginx Config Error! Reverting changes..."
+    [ -f "${ACL_FILE}.bak" ] && cp "${ACL_FILE}.bak" "$ACL_FILE"
+    [ -f "${SITE_FILE}.bak" ] && cp "${SITE_FILE}.bak" "$SITE_FILE"
+    systemctl reload nginx
+    exit 1
+fi
+
 echo "--------------------------------------------------"
-echo "WordOps Panel is active at: http://$(hostname -I | awk '{print $1}'):8000"
+echo "Setup Complete!"
+echo "Dashboard: http://$(hostname -I | awk '{print $1}'):8000"
+echo "Backend:   https://$(hostname -I | awk '{print $1}'):22222"
 echo "--------------------------------------------------"
 
 exit 0
