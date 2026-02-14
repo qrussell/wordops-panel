@@ -8,6 +8,8 @@
 
 <img width="767" height="1075" alt="image" src="https://github.com/user-attachments/assets/83bcefc7-19b1-4286-9fa0-7ec188b2a2c1" />
 
+<img width="742" height="967" alt="cloudflare-configuration-light" src="https://github.com/user-attachments/assets/771b6e18-0a46-4509-8dd4-ff30b53be8cf" />
+
 ---
 
 ## ✨ Key Features
