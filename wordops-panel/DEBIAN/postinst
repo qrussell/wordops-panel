@@ -16,21 +16,19 @@ if [ ! -f "$VENV_DIR/bin/python" ]; then
 fi
 
 echo "Installing dependencies..."
+# ADDED: pyyaml
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet
-"$VENV_DIR/bin/pip" install fastapi uvicorn jinja2 python-multipart requests "python-jose[cryptography]" "passlib[argon2]" "argon2-cffi" --quiet
+"$VENV_DIR/bin/pip" install fastapi uvicorn jinja2 python-multipart requests pyyaml "python-jose[cryptography]" "passlib[argon2]" "argon2-cffi" --quiet
 
 # 2. Fix Permissions
 chown -R root:root "$APP_DIR"
 chmod -R 750 "$APP_DIR"
 
 # 3. Modify 'acl.conf' (The Gatekeeper)
-# We insert 'auth_request /auth/check;' right after 'satisfy any;'
 if [ -f "$ACL_FILE" ]; then
     if ! grep -q "auth_request /auth/check;" "$ACL_FILE"; then
         echo "Updating acl.conf for SSO..."
         cp "$ACL_FILE" "${ACL_FILE}.bak"
-        
-        # Insert auth_request line after 'satisfy any;'
         sed -i '/satisfy any;/a \    auth_request /auth/check;' "$ACL_FILE"
     else
         echo "acl.conf already configured."
@@ -38,17 +36,14 @@ if [ -f "$ACL_FILE" ]; then
 fi
 
 # 4. Modify 'sites-available/22222' (The Router)
-# We need to define WHAT /auth/check actually does
 if [ -f "$SITE_FILE" ]; then
     if ! grep -q "location = /auth/check" "$SITE_FILE"; then
         echo "Adding SSO routes to WordOps Backend (22222)..."
         cp "$SITE_FILE" "${SITE_FILE}.bak"
 
-        # Create a temp file with the route content
         cat <<EOF > /tmp/wo_sso_routes.txt
 
     # --- WORDPANEL SSO ROUTES ---
-    # Internal check against Python App
     location = /auth/check {
         internal;
         proxy_pass http://127.0.0.1:8000/auth/check;
@@ -57,18 +52,10 @@ if [ -f "$SITE_FILE" ]; then
         proxy_set_header X-Original-URI \$request_uri;
         proxy_set_header Cookie \$http_cookie;
     }
-
-    # If SSO fails (401), we want Nginx to try the next method (Basic Auth)
-    # Because 'satisfy any' is on, we don't need a specific error page redirect here.
-    # Nginx will automatically fall back to the password prompt if auth_request fails.
     # ----------------------------
 }
 EOF
-        # Remove the closing brace '}' of the server block
-        # We assume the last line is '}'
         sed -i '$d' "$SITE_FILE"
-
-        # Append our routes and re-add the closing brace
         cat /tmp/wo_sso_routes.txt >> "$SITE_FILE"
         rm /tmp/wo_sso_routes.txt
         
@@ -97,8 +84,19 @@ else
     [ -f "${ACL_FILE}.bak" ] && cp "${ACL_FILE}.bak" "$ACL_FILE"
     [ -f "${SITE_FILE}.bak" ] && cp "${SITE_FILE}.bak" "$SITE_FILE"
     systemctl reload nginx
-    exit 1
 fi
+
+# 7. Install Cloudflare Tunnel (Binary Download)
+# We use direct download to avoid dpkg lock errors during installation
+if ! command -v cloudflared &> /dev/null; then
+    echo "Installing Cloudflare Tunnel (Binary)..."
+    curl -L --output /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+    chmod +x /usr/local/bin/cloudflared
+    echo "Cloudflare Tunnel installed."
+fi
+
+# Ensure config directory exists
+mkdir -p /etc/cloudflared
 
 echo "--------------------------------------------------"
 echo "Setup Complete!"
