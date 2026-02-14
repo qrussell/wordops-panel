@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment (We create this fresh on install, don't upload it)
+opt/wordpanel/venv/
+venv/
+
+# Build Artifacts
+*.deb
+.DS_Store
+
+# User Database (Contains passwords/hashes)
+opt/wordpanel/wordpanel_users.db
+*.db

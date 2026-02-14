@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+# Define paths
+APP_DIR="/opt/wordpanel"
+VENV_DIR="$APP_DIR/venv"
+
+echo "Setting up WordPanel..."
+
+# 1. Create Virtual Environment (Fresh install)
+if [ ! -f "$VENV_DIR/bin/python" ]; then
+    echo "Creating Python virtual environment..."
+    # Ensure we use the system python3 to create it
+    /usr/bin/python3 -m venv "$VENV_DIR"
+fi
+
+# 2. Install Python Dependencies
+# We use the pip inside the NEW venv
+echo "Installing dependencies..."
+"$VENV_DIR/bin/pip" install --upgrade pip --quiet
+"$VENV_DIR/bin/pip" install fastapi uvicorn jinja2 python-multipart requests "python-jose[cryptography]" "passlib[argon2]" "argon2-cffi" --quiet
+# 3. Set Permissions
+echo "Fixing permissions..."
+# Ensure the service user (root in your case) owns the files
+chown -R root:root "$APP_DIR"
+chmod -R 750 "$APP_DIR"
+
+# 4. Handle Systemd Service
+echo "Enabling WordPanel service..."
+systemctl daemon-reload
+systemctl enable wordpanel.service
+
+# Restart service
+if systemctl is-active --quiet wordpanel.service; then
+    systemctl restart wordpanel.service
+else
+    systemctl start wordpanel.service
+fi
+
+echo "--------------------------------------------------"
+echo "WordPanel is active at: http://$(hostname -I | awk '{print $1}'):8000"
+echo "--------------------------------------------------"
+
+exit 0

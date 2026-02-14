@@ -1,0 +1,15 @@
+<li class="px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition" id="user-{{ username }}">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
+            {{ username[:2].upper() }}
+        </div>
+        <span class="font-medium text-gray-700">{{ username }}</span>
+    </div>
+    {% if username != 'admin' and username != user %} 
+    <button hx-delete="/users/{{ username }}" hx-target="#user-{{ username }}" hx-swap="outerHTML" class="text-red-600 hover:text-red-900 text-xs font-bold uppercase tracking-wide border border-red-200 px-3 py-1 rounded hover:bg-red-50 transition">
+        Remove
+    </button>
+    {% elif username == user %}
+    <span class="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded">YOU</span>
+    {% endif %}
+</li>
