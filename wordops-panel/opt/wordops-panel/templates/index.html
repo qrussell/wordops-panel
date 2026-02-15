@@ -325,6 +325,8 @@
                                         <button 
                                             hx-delete="/site/{{ site.domain }}/delete"
                                             hx-confirm="Are you sure you want to DELETE {{ site.domain }}? This cannot be undone."
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML swap:1s"
                                             class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-bold uppercase tracking-wide border border-red-200 dark:border-red-800 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900 transition">
                                             Delete
                                         </button>
